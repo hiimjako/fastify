@@ -1760,3 +1760,45 @@ test('using fastify.all when a catchall is defined does not degrade performance'
 
   t.pass()
 })
+
+test('exposeHeadRoute should expose HEAD matching correctly the url', t => {
+  t.plan(8)
+
+  const fastify = Fastify({ exposeHeadRoutes: true })
+
+  fastify.route({
+    method: 'GET',
+    path: '/route/:id',
+    handler: (req, reply) => {
+      reply.send({ route: 'base route without path param' })
+    }
+  })
+
+  fastify.route({
+    method: 'GET',
+    path: '/route/',
+    handler: (req, reply) => {
+      reply.send('in this case it is a string')
+    }
+  })
+
+  fastify.inject({
+    method: 'HEAD',
+    url: '/route/'
+  }, (error, res) => {
+    t.error(error)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['content-type'], 'text/plain; charset=utf-8')
+    t.same(res.body, '')
+  })
+
+  fastify.inject({
+    method: 'HEAD',
+    url: '/route/:id'
+  }, (error, res) => {
+    t.error(error)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+    t.equal(res.body, '')
+  })
+})
